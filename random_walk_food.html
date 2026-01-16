@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Walk Food Search</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #1a1a2e;
+      font-family: Arial, sans-serif;
+      color: white;
+      padding: 20px;
+    }
+    #info {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    #controls {
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #4a90d9;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #357abd;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">Steps: <span id="steps">0</span> | Status: <span id="status">Searching...</span></div>
+  <div id="canvas-container"></div>
+  <div id="controls">
+    <button onclick="restart()">Restart</button>
+    <button onclick="toggleSpeed()">Speed: <span id="speedLabel">Normal</span></button>
+  </div>
+
+  <script>
+    const CANVAS_SIZE = 600;
+    const FOOD_COUNT = 10;
+    const FOOD_RADIUS = 10;
+    const WALKER_RADIUS = 8;
+    const STEP_SIZE = 5;
+
+    let walker;
+    let foods = [];
+    let steps = 0;
+    let found = false;
+    let speed = 1; // frames per step
+
+    // Direction vectors: up, down, left, right
+    const directions = [
+      { x: 0, y: -STEP_SIZE },  // up
+      { x: 0, y: STEP_SIZE },   // down
+      { x: -STEP_SIZE, y: 0 },  // left
+      { x: STEP_SIZE, y: 0 }    // right
+    ];
+
+    function setup() {
+      let canvas = createCanvas(CANVAS_SIZE, CANVAS_SIZE);
+      canvas.parent('canvas-container');
+      initSimulation();
+    }
+
+    function initSimulation() {
+      // Place walker in the center
+      walker = { x: CANVAS_SIZE / 2, y: CANVAS_SIZE / 2 };
+
+      // Generate random food locations (not too close to center)
+      foods = [];
+      for (let i = 0; i < FOOD_COUNT; i++) {
+        let food;
+        let validPosition = false;
+
+        while (!validPosition) {
+          food = {
+            x: random(FOOD_RADIUS, CANVAS_SIZE - FOOD_RADIUS),
+            y: random(FOOD_RADIUS, CANVAS_SIZE - FOOD_RADIUS),
+            eaten: false
+          };
+
+          // Make sure food is not too close to starting position
+          let distToCenter = dist(food.x, food.y, CANVAS_SIZE / 2, CANVAS_SIZE / 2);
+          if (distToCenter > 50) {
+            validPosition = true;
+          }
+        }
+        foods.push(food);
+      }
+
+      steps = 0;
+      found = false;
+      updateDisplay();
+    }
+
+    function draw() {
+      background(26, 26, 46);
+
+      // Draw grid for reference
+      stroke(40, 40, 60);
+      strokeWeight(1);
+      for (let i = 0; i < CANVAS_SIZE; i += 50) {
+        line(i, 0, i, CANVAS_SIZE);
+        line(0, i, CANVAS_SIZE, i);
+      }
+
+      // Draw food
+      for (let food of foods) {
+        if (!food.eaten) {
+          fill(50, 205, 50);
+          stroke(34, 139, 34);
+          strokeWeight(2);
+          ellipse(food.x, food.y, FOOD_RADIUS * 2);
+        }
+      }
+
+      // Draw walker
+      fill(255, 100, 100);
+      stroke(200, 50, 50);
+      strokeWeight(2);
+      ellipse(walker.x, walker.y, WALKER_RADIUS * 2);
+
+      // Move walker if not found food yet
+      if (!found) {
+        for (let i = 0; i < speed; i++) {
+          moveWalker();
+          checkFood();
+          if (found) break;
+        }
+      }
+    }
+
+    function moveWalker() {
+      // Choose random direction
+      let dir = random(directions);
+
+      // Calculate new position
+      let newX = walker.x + dir.x;
+      let newY = walker.y + dir.y;
+
+      // Bounce off walls
+      if (newX >= WALKER_RADIUS && newX <= CANVAS_SIZE - WALKER_RADIUS) {
+        walker.x = newX;
+      }
+      if (newY >= WALKER_RADIUS && newY <= CANVAS_SIZE - WALKER_RADIUS) {
+        walker.y = newY;
+      }
+
+      steps++;
+      updateDisplay();
+    }
+
+    function checkFood() {
+      for (let food of foods) {
+        if (!food.eaten) {
+          let d = dist(walker.x, walker.y, food.x, food.y);
+          if (d < FOOD_RADIUS + WALKER_RADIUS) {
+            food.eaten = true;
+            found = true;
+            document.getElementById('status').textContent = 'Food found!';
+            document.getElementById('status').style.color = '#32cd32';
+            return;
+          }
+        }
+      }
+    }
+
+    function updateDisplay() {
+      document.getElementById('steps').textContent = steps;
+    }
+
+    function restart() {
+      document.getElementById('status').textContent = 'Searching...';
+      document.getElementById('status').style.color = 'white';
+      initSimulation();
+    }
+
+    function toggleSpeed() {
+      if (speed === 1) {
+        speed = 10;
+        document.getElementById('speedLabel').textContent = 'Fast';
+      } else if (speed === 10) {
+        speed = 50;
+        document.getElementById('speedLabel').textContent = 'Very Fast';
+      } else {
+        speed = 1;
+        document.getElementById('speedLabel').textContent = 'Normal';
+      }
+    }
+  </script>
+</body>
+</html>
