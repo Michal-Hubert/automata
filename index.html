@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Random Walk Food Search</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="random_walk.js"></script>
+  <script src="levy_flight.js"></script>
   <style>
     body {
       margin: 0;
@@ -36,12 +38,29 @@
     button:hover {
       background: #357abd;
     }
+    select {
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #4a90d9;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      margin: 5px;
+    }
+    select:hover {
+      background: #357abd;
+    }
   </style>
 </head>
 <body>
   <div id="info">Steps: <span id="steps">0</span> | Status: <span id="status">Searching...</span></div>
   <div id="canvas-container"></div>
   <div id="controls">
+    <select id="simType" onchange="changeSimType()">
+      <option value="random_walk">Random Walk</option>
+      <option value="levy_flight">Lévy Flight</option>
+    </select>
     <button onclick="restart()">Restart</button>
     <button onclick="toggleSpeed()">Speed: <span id="speedLabel">Normal</span></button>
   </div>
@@ -51,21 +70,13 @@
     const FOOD_COUNT = 10;
     const FOOD_RADIUS = 10;
     const WALKER_RADIUS = 8;
-    const STEP_SIZE = 5;
 
     let walker;
     let foods = [];
     let steps = 0;
     let found = false;
-    let speed = 1; // frames per step
-
-    // Direction vectors: up, down, left, right
-    const directions = [
-      { x: 0, y: -STEP_SIZE },  // up
-      { x: 0, y: STEP_SIZE },   // down
-      { x: -STEP_SIZE, y: 0 },  // left
-      { x: STEP_SIZE, y: 0 }    // right
-    ];
+    let speed = 1;
+    let simType = 'random_walk';
 
     function setup() {
       let canvas = createCanvas(CANVAS_SIZE, CANVAS_SIZE);
@@ -74,10 +85,8 @@
     }
 
     function initSimulation() {
-      // Place walker in the center
       walker = { x: CANVAS_SIZE / 2, y: CANVAS_SIZE / 2 };
 
-      // Generate random food locations (not too close to center)
       foods = [];
       for (let i = 0; i < FOOD_COUNT; i++) {
         let food;
@@ -90,7 +99,6 @@
             eaten: false
           };
 
-          // Make sure food is not too close to starting position
           let distToCenter = dist(food.x, food.y, CANVAS_SIZE / 2, CANVAS_SIZE / 2);
           if (distToCenter > 50) {
             validPosition = true;
@@ -107,7 +115,7 @@
     function draw() {
       background(26, 26, 46);
 
-      // Draw grid for reference
+      // Draw grid
       stroke(40, 40, 60);
       strokeWeight(1);
       for (let i = 0; i < CANVAS_SIZE; i += 50) {
@@ -142,19 +150,20 @@
     }
 
     function moveWalker() {
-      // Choose random direction
-      let dir = random(directions);
+      let nextPos;
 
-      // Calculate new position
-      let newX = walker.x + dir.x;
-      let newY = walker.y + dir.y;
+      if (simType === 'random_walk') {
+        nextPos = RandomWalk.getNextPosition(walker.x, walker.y);
+      } else {
+        nextPos = LevyFlight.getNextPosition(walker.x, walker.y);
+      }
 
       // Bounce off walls
-      if (newX >= WALKER_RADIUS && newX <= CANVAS_SIZE - WALKER_RADIUS) {
-        walker.x = newX;
+      if (nextPos.x >= WALKER_RADIUS && nextPos.x <= CANVAS_SIZE - WALKER_RADIUS) {
+        walker.x = nextPos.x;
       }
-      if (newY >= WALKER_RADIUS && newY <= CANVAS_SIZE - WALKER_RADIUS) {
-        walker.y = newY;
+      if (nextPos.y >= WALKER_RADIUS && nextPos.y <= CANVAS_SIZE - WALKER_RADIUS) {
+        walker.y = nextPos.y;
       }
 
       steps++;
@@ -197,6 +206,21 @@
         speed = 1;
         document.getElementById('speedLabel').textContent = 'Normal';
       }
+    }
+
+    function changeSimType() {
+      simType = document.getElementById('simType').value;
+      // Reset walker position and step count, but keep food locations
+      walker = { x: CANVAS_SIZE / 2, y: CANVAS_SIZE / 2 };
+      steps = 0;
+      found = false;
+      // Reset eaten status so food can be found again
+      for (let food of foods) {
+        food.eaten = false;
+      }
+      document.getElementById('status').textContent = 'Searching...';
+      document.getElementById('status').style.color = 'white';
+      updateDisplay();
     }
   </script>
 </body>
