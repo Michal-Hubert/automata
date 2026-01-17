@@ -79,6 +79,7 @@
     let found = false;
     let speed = 1;
     let simType = 'random_walk';
+    let trail = []; // Store walker's path
 
     function setup() {
       let canvas = createCanvas(CANVAS_SIZE, CANVAS_SIZE);
@@ -88,6 +89,7 @@
 
     function initSimulation() {
       walker = { x: CANVAS_SIZE / 2, y: CANVAS_SIZE / 2 };
+      trail = [{ x: walker.x, y: walker.y }]; // Reset trail with starting position
       BFS.reset(CANVAS_SIZE / 2, CANVAS_SIZE / 2);
 
       foods = [];
@@ -125,6 +127,16 @@
         line(i, 0, i, CANVAS_SIZE);
         line(0, i, CANVAS_SIZE, i);
       }
+
+      // Draw trail
+      noFill();
+      stroke(255, 100, 100, 150);
+      strokeWeight(2);
+      beginShape();
+      for (let pos of trail) {
+        vertex(pos.x, pos.y);
+      }
+      endShape();
 
       // Draw food
       for (let food of foods) {
@@ -172,6 +184,9 @@
         walker.y = nextPos.y;
       }
 
+      // Record position in trail
+      trail.push({ x: walker.x, y: walker.y });
+
       steps++;
       updateDisplay();
     }
@@ -218,6 +233,7 @@
       simType = document.getElementById('simType').value;
       // Reset walker position and step count, but keep food locations
       walker = { x: CANVAS_SIZE / 2, y: CANVAS_SIZE / 2 };
+      trail = [{ x: walker.x, y: walker.y }]; // Reset trail
       BFS.reset(CANVAS_SIZE / 2, CANVAS_SIZE / 2);
       steps = 0;
       found = false;
